@@ -60,68 +60,77 @@ public class teleOp extends OpMode {
     final double RIGHT_POSITION = 0;
 
     // Declare OpMode members.
-    private DcMotor motorFrontLeft = null;
-    private DcMotor motorFrontRight = null;
-    private DcMotor motorBackLeft = null;
-    private DcMotor motorBackRight = null;
-    private DcMotorEx leftLauncher = null;
-    private DcMotorEx rightLauncher = null;
-    private DcMotor intake = null;
-    private CRServo leftFeeder = null;
-    private CRServo rightFeeder = null;
-    private Servo diverter = null;
+private DcMotor motorFrontLeft = null;    // Controls front-left wheel movement
+private DcMotor motorFrontRight = null;   // Controls front-right wheel movement
+private DcMotor motorBackLeft = null;     // Controls back-left wheel movement
+private DcMotor motorBackRight = null;    // Controls back-right wheel movement
 
-    ElapsedTime leftFeederTimer = new ElapsedTime();
-    ElapsedTime rightFeederTimer = new ElapsedTime();
+// Declare extended DC motors (DcMotorEx) for higher precision launcher control
+private DcMotorEx leftLauncher = null;    // Powers the left launcher wheel for shooting projectiles
+private DcMotorEx rightLauncher = null;   // Powers the right launcher wheel for shooting projectiles
+
+// Declare standard DC motor for intake system
+private DcMotor intake = null;            // Rotates to collect or release game elements
+
+// Declare continuous rotation servos for feeder mechanism
+private CRServo leftFeeder = null;        // Feeds objects into launcher (left side)
+private CRServo rightFeeder = null;       // Feeds objects into launcher (right side)
+
+// Declare positional servo for diverter mechanism
+private Servo diverter = null;            // Adjusts projectile path or directs objects
 
 
+    ElapsedTime leftFeederTimer = new ElapsedTime();  // Measures elapsed time for left feeder activity
+    ElapsedTime rightFeederTimer = new ElapsedTime();  // Measures elapsed time for right feeder activity
+
+// Define finite state machines for robot subsytems 
     private enum LaunchState {
-        IDLE,
-        SPIN_UP,
-        LAUNCH,
-        LAUNCHING,
+        IDLE,    //off
+        SPIN_UP,    //Motors speed up
+        LAUNCH,    // ready to fire
+        LAUNCHING,    // firing
     }
-    private LaunchState leftLaunchState;
-    private LaunchState rightLaunchState;
+    private LaunchState leftLaunchState; //left launch state
+    private LaunchState rightLaunchState;    //right launcher state
 
     private enum DiverterDirection {
-        LEFT,
-        RIGHT;
+        LEFT,    // left side
+        RIGHT;    // right side
     }
-    private DiverterDirection diverterDirection = DiverterDirection.LEFT;
-
+    private DiverterDirection diverterDirection = DiverterDirection.LEFT;  //default  
+//intake states
     private enum IntakeState {
-        ON,
-        OFF;
+        ON,    //on
+        OFF;    //off
     }
 
-    private IntakeState intakeState = IntakeState.OFF;
-
+    private IntakeState intakeState = IntakeState.OFF;    //default off
+//launcher range
     private enum LauncherDistance {
-        CLOSE,
-        FAR;
+        CLOSE,    //short distance 
+        FAR;    // long
     }
 
-    private LauncherDistance launcherDistance = LauncherDistance.CLOSE;
+    private LauncherDistance launcherDistance = LauncherDistance.CLOSE;     //default range
 
     // Setup a variable for each drive wheel to save power level for telemetry
-    double leftFrontPower;
-    double rightFrontPower;
-    double leftBackPower;
-    double rightBackPower;
+    double leftFrontPower;    //front left motor power
+    double rightFrontPower;    //front right    
+    double leftBackPower;    //back left
+    double rightBackPower;    //back right
 
     /*
      * Code to run ONCE when the driver hits INIT
      */
     @Override
     public void init() {
-        leftLaunchState = LaunchState.IDLE;
-        rightLaunchState = LaunchState.IDLE;
+        leftLaunchState = LaunchState.IDLE;     // set left launcher off 
+        rightLaunchState = LaunchState.IDLE;    // set right launcher off
 
         motorFrontLeft = hardwareMap.get(DcMotor.class, "left_front_drive");
         motorFrontRight = hardwareMap.get(DcMotor.class, "right_front_drive");
         motorBackLeft = hardwareMap.get(DcMotor.class, "left_back_drive");
-        motorBackLeft = hardwareMap.get(DcMotor.class, "right_back_drive");
+        motorBackRight = hardwareMap.get(DcMotor.class, "right_back_drive");
         leftLauncher = hardwareMap.get(DcMotorEx.class, "left_launcher");
         rightLauncher = hardwareMap.get(DcMotorEx.class, "right_launcher");
         intake = hardwareMap.get(DcMotor.class, "intake");
@@ -136,15 +145,15 @@ public class teleOp extends OpMode {
          * Note: The settings here assume direct drive on left and right wheels. Gear
          * Reduction or 90 Deg drives may require direction flips
          */
-        motorFrontLeft.setDirection(DcMotor.Direction.REVERSE);
-        motorFrontRight.setDirection(DcMotor.Direction.FORWARD);
-        motorBackLeft.setDirection(DcMotor.Direction.REVERSE);
-        motorBackLeft.setDirection(DcMotor.Direction.FORWARD);
-
+        motorFrontLeft.setDirection(DcMotor.Direction.REVERSE);    //reverse left front motor
+        motorFrontRight.setDirection(DcMotor.Direction.FORWARD);    //forward right front motor
+        motorBackLeft.setDirection(DcMotor.Direction.REVERSE);    //reverse left back motor
+        motorBackRight.setDirection(DcMotor.Direction.FORWARD);     //reverse right back motor
+// reverse laucher so both spin same way
         leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
-
+// reverse intake motor
         intake.setDirection(DcMotorSimple.Direction.REVERSE);
-
+// use encoder for speed control
         leftLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
@@ -153,12 +162,12 @@ public class teleOp extends OpMode {
          * slow down much faster when it is coasting. This creates a much more controllable
          * drivetrain. As the robot stops much quicker.
          */
-        motorFrontLeft.setZeroPowerBehavior(BRAKE);
-        motorFrontRight.setZeroPowerBehavior(BRAKE);
-        motorBackLeft.setZeroPowerBehavior(BRAKE);
-        motorBackLeft.setZeroPowerBehavior(BRAKE);
-        leftLauncher.setZeroPowerBehavior(BRAKE);
-        rightLauncher.setZeroPowerBehavior(BRAKE);
+        motorFrontLeft.setZeroPowerBehavior(BRAKE);    // stop front left when no power 
+        motorFrontRight.setZeroPowerBehavior(BRAKE);    // stop front right
+        motorBackLeft.setZeroPowerBehavior(BRAKE);    // stop back left
+        motorBackRight.setZeroPowerBehavior(BRAKE);    // stop back right
+        leftLauncher.setZeroPowerBehavior(BRAKE);    //stop left launcher
+        rightLauncher.setZeroPowerBehavior(BRAKE);    // stop right launcher
 
         /*
          * set Feeders to an initial value to initialize the servo controller
