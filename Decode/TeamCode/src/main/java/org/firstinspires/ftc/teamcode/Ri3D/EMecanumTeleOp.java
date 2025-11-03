@@ -42,7 +42,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp(name = "DECODE Ri3D", group = "StarterBot")
 //@Disabled
-public class teleOp extends OpMode {
+    public class EMecanumTeleOp extends OpMode {
     final double FEED_TIME_SECONDS = 0.80; //The feeder servos run this long when a shot is requested.
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
@@ -60,30 +60,30 @@ public class teleOp extends OpMode {
     final double RIGHT_POSITION = 0;
 
     // Declare OpMode members.
-private DcMotor motorFrontLeft = null;    // Controls front-left wheel movement
-private DcMotor motorFrontRight = null;   // Controls front-right wheel movement
-private DcMotor motorBackLeft = null;     // Controls back-left wheel movement
-private DcMotor motorBackRight = null;    // Controls back-right wheel movement
+    private DcMotor motorFrontLeft = null;    // Controls front-left wheel movement
+    private DcMotor motorFrontRight = null;   // Controls front-right wheel movement
+    private DcMotor motorBackLeft = null;     // Controls back-left wheel movement
+    private DcMotor motorBackRight = null;    // Controls back-right wheel movement
 
-// Declare extended DC motors (DcMotorEx) for higher precision launcher control
-private DcMotorEx leftLauncher = null;    // Powers the left launcher wheel for shooting projectiles
-private DcMotorEx rightLauncher = null;   // Powers the right launcher wheel for shooting projectiles
+    // Declare extended DC motors (DcMotorEx) for higher precision launcher control
+    private DcMotorEx leftLauncher = null;    // Powers the left launcher wheel for shooting projectiles
+    private DcMotorEx rightLauncher = null;   // Powers the right launcher wheel for shooting projectiles
 
-// Declare standard DC motor for intake system
-private DcMotor intake = null;            // Rotates to collect or release game elements
+    // Declare standard DC motor for intake system
+    private DcMotor intake = null;            // Rotates to collect or release game elements
 
-// Declare continuous rotation servos for feeder mechanism
-private CRServo leftFeeder = null;        // Feeds objects into launcher (left side)
-private CRServo rightFeeder = null;       // Feeds objects into launcher (right side)
+    // Declare continuous rotation servos for feeder mechanism
+    private CRServo leftFeeder = null;        // Feeds objects into launcher (left side)
+    private CRServo rightFeeder = null;       // Feeds objects into launcher (right side)
 
-// Declare positional servo for diverter mechanism
-private Servo diverter = null;            // Adjusts projectile path or directs objects
+    // Declare positional servo for diverter mechanism
+    private Servo diverter = null;            // Adjusts projectile path or directs objects
 
 
     ElapsedTime leftFeederTimer = new ElapsedTime();  // Measures elapsed time for left feeder activity
     ElapsedTime rightFeederTimer = new ElapsedTime();  // Measures elapsed time for right feeder activity
 
-// Define finite state machines for robot subsytems 
+    // Define finite state machines for robot subsytems
     private enum LaunchState {
         IDLE,    //off
         SPIN_UP,    //Motors speed up
@@ -97,17 +97,17 @@ private Servo diverter = null;            // Adjusts projectile path or directs 
         LEFT,    // left side
         RIGHT;    // right side
     }
-    private DiverterDirection diverterDirection = DiverterDirection.LEFT;  //default  
-//intake states
+    private DiverterDirection diverterDirection = DiverterDirection.LEFT;  //default
+    //intake states
     private enum IntakeState {
         ON,    //on
         OFF;    //off
     }
 
     private IntakeState intakeState = IntakeState.OFF;    //default off
-//launcher range
+    //launcher range
     private enum LauncherDistance {
-        CLOSE,    //short distance 
+        CLOSE,    //short distance
         FAR;    // long
     }
 
@@ -115,7 +115,7 @@ private Servo diverter = null;            // Adjusts projectile path or directs 
 
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftFrontPower;    //front left motor power
-    double rightFrontPower;    //front right    
+    double rightFrontPower;    //front right
     double leftBackPower;    //back left
     double rightBackPower;    //back right
 
@@ -124,18 +124,18 @@ private Servo diverter = null;            // Adjusts projectile path or directs 
      */
     @Override
     public void init() {
-        leftLaunchState = LaunchState.IDLE;     // set left launcher off 
+        leftLaunchState = LaunchState.IDLE;     // set left launcher off
         rightLaunchState = LaunchState.IDLE;    // set right launcher off
 
-        motorFrontLeft = hardwareMap.get(DcMotor.class, "left_front_drive");
-        motorFrontRight = hardwareMap.get(DcMotor.class, "right_front_drive");
-        motorBackLeft = hardwareMap.get(DcMotor.class, "left_back_drive");
-        motorBackRight = hardwareMap.get(DcMotor.class, "right_back_drive");
-        leftLauncher = hardwareMap.get(DcMotorEx.class, "left_launcher");
-        rightLauncher = hardwareMap.get(DcMotorEx.class, "right_launcher");
+        motorFrontLeft = hardwareMap.get(DcMotor.class, "mfl");
+        motorFrontRight = hardwareMap.get(DcMotor.class, "mfr");
+        motorBackLeft = hardwareMap.get(DcMotor.class, "mbl");
+        motorBackRight = hardwareMap.get(DcMotor.class, "mbr");
+        leftLauncher = hardwareMap.get(DcMotorEx.class, "ll");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "rl");
         intake = hardwareMap.get(DcMotor.class, "intake");
-        leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
-        rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
+        leftFeeder = hardwareMap.get(CRServo.class, "lf");
+        rightFeeder = hardwareMap.get(CRServo.class, "rf");
         diverter = hardwareMap.get(Servo.class, "diverter");
 
         /*
@@ -175,8 +175,8 @@ private Servo diverter = null;            // Adjusts projectile path or directs 
         leftFeeder.setPower(STOP_SPEED);
         rightFeeder.setPower(STOP_SPEED);
 
-        leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
-        rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+        leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(1.36529166667, 0.136529166667, 0, 13.6529166667));
+        rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(1.36529166667, 0.136529166667, 0, 13.6529166667));
 
         /*
          * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
@@ -224,7 +224,7 @@ private Servo diverter = null;            // Adjusts projectile path or directs 
             rightLauncher.setVelocity(STOP_SPEED);
         }
 
-        if (gamepad1.dpadDownWasPressed()) {
+        if (gamepad1.dpadRightWasPressed()) {
             switch (diverterDirection){
                 case LEFT:
                     diverterDirection = DiverterDirection.RIGHT;
